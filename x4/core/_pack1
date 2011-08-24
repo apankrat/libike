@@ -1,0 +1,16 @@
+/*
+ *    Copyright (c) 2003, Cipherica Labs. All rights reserved.
+ *    See enclosed license.txt for redistribution information.
+ *
+ *    $Id: _pack1,v 1.1.1.1 2003/03/19 17:09:18 alex Exp $
+ */
+
+
+/*
+ *    The "core/_pack" and "core/_unpack" headers instruct compiler to 
+ *    change packing alignment for structures and unions to a single
+ *    byte or to restore it to a default value respectively.
+ *
+ */
+
+  $todo - implement for the platform in use

@@ -1,0 +1,19 @@
+/*
+ *    Copyright (c) 2003, Cipherica Labs. All rights reserved.
+ *    See enclosed license.txt for redistribution information.
+ *
+ *    $Id: _pack1,v 1.2 2003/04/04 21:35:47 alex Exp $
+ */
+
+/*
+ *    See comments in /common/_pack1
+ */
+
+#ifndef _CPHL_PACK_
+#   define _CPHL_PACK_
+#   pragma pack (1)
+#else
+#   error Recursive inclusion of _pack.h (missing _unpack.h ?)
+#endif
+
+

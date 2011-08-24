@@ -1,0 +1,19 @@
+/*
+ *    Copyright (c) 2003, Cipherica Labs. All rights reserved.
+ *    See enclosed license.txt for redistribution information.
+ *
+ *    $Id: _unpack,v 1.1.1.1 2003/03/19 17:09:18 alex Exp $
+ */
+
+/*
+ *    See comments in /common/_unpack
+ */
+
+#ifdef _CPHL_PACK_
+#   undef _CPHL_PACK_
+#   pragma pack (pop)
+#else
+#   error Invalid use of _unpack.h (missing _pack.h ?)
+#endif
+
+

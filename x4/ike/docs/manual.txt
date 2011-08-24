@@ -1,0 +1,451 @@
+Version
+
+ 0.9.6
+
+Introduction
+
+  Libike (aka charon) is an IKE exchange management library.
+
+  This document describes general libike structure, its functioning 
+  principles and API. The document is work-in-progress, some sections
+  are incomplete and are subject to further expansion.
+
+Legal
+
+  Copyright (c) 2003, Cipherica Labs. All rights reserved.
+  See enclosed license.txt for redistribution information.
+
+  libike is distributed under one of the OSI-approved Open Source
+  licenses. The license effectively boils down to the unrestricted
+  use under condition of open-sourced redistributions. For other
+  redistribution schemes alternate licensing must be negotiated
+  with Cipherica Labs.  
+
+Overview
+
+  Charon library allows its users to engage in IKE exchanges (subject 
+  to limitations listed below) as per RFC 2407, 2408, 2409, etc.
+
+  The library implements ISAKMP packet processing, IKE state management
+  and various miscellaneous functionality such as handling of packet 
+  retransmissions, SA lifetime tracking, etc.
+
+  The library does NOT provide means for defining, maintaining and
+  querying security policies; it delegates this functionality to the 
+  external code via the callback mechanism instead.
+
+
+Framework and source code structure
+
+  x4/core
+  
+    The library operates in the scope of a compact framework that serves 
+    as an OS glue and creates a platform-independent environment for the 
+    rest of the code. The framework defines the types, the methods and 
+    the naming convention to be used by the code to access OS and run-
+    -time services. 
+
+    Please refer to the headers in x4/core directory for further details.
+    The framework is very compact and takes minimal amount of time to port
+    to a new platform.
+
+  x4/net
+
+    This directory contains headers defining various network related 
+    types, constants and structures.
+
+  x4/misc
+
+    Miscellaneous commonly used types and functions.
+
+  x4/crypto
+
+    Crypto interface, which includes pseudo-random, hashing and symmetric
+    encryption algorithms, Diffie-Hellman KE, PKI methods, etc
+
+  x4/ike
+
+    Libike source code itself
+
+  x4/test
+
+    The code for testing libike. Subject to frequent changes.
+
+
+General considerations
+
+  The API consists of exactly 8 methods, which are the only library 
+  entry points. The library code is executing if and only if one of
+  these methods was called and has not returned yet. From time to
+  time libike will pass the execution back to the user via a callback
+  to either query some data, perform validation or report an event. 
+  
+  The library is reentrant in a sense that the callback code is allowed
+  to issue API calls.
+
+  The library is designed for a serialized use, ie no two threads
+  should be executing in the library simultaneously. The task of 
+  access serialization is a responsibility of libike user.
+  
+  The library implements recursion control, which is used for a mark-
+  now-purge-later approach of a data disposal. For instance, calling
+  x4_charon_term1() from the callback will not immediately dispose 
+  associated internal data, but will rather delay the cleanup until 
+  the outmost call to the library is about to return. All this is
+  transparent to the user, except it's advised to allow call recursion
+  to drop periodically to 0 to facilitate timely memory disposal.
+  
+    Just for the record - the recursion control is used primarily to 
+    avoid reference counting of individual datamodel elements, ie -
+    to simplify data housekeeping.
+
+
+Typical use
+
+  The following pseudocode outlines the execution flow during a typical
+  libike use. The example assumes phase 1 is authenticated with preshared
+  key and phase 2 is locally initiated (not responded).
+
+    .... an initialization ....
+
+    charon_init(...);   // initialize libike
+
+    s = socket();       // create a UDP socket for talking to the peer
+    bind(s);
+    connect(s);
+
+    .... an IKE exchange ....
+
+    charon_init1(...);  // initiate phase 1 exchange
+    
+    # receive ph1_initiated()           // remember 'exchange context'
+    # receive ph1_get_psk(),            // return the PSK
+    # receive ph1_send(),               // send data to the peer
+
+    while (ph1 is in progress)          // enter select() loop
+    {
+      if (select(s, 1sec) == can_read)  // wait for an inbound data
+      {
+        recv(s, data, len);
+        charon_recv(data,len);          // pass received data to libike
+
+        # receive ph1_send()            // more data for the peer
+
+        # receive ph1_completed()       // phase 1 completed
+        # - or -
+        # receive ph1_disposed()        // phase 1 failed to complete
+      }
+      
+      charon_tick();                    // let libike do some timed work
+    }
+
+    if (ph1 has failed)                 // ie received ph1_disposed()
+      return;
+
+    charon_init2(...);                  // initiate phase 2 exchange
+
+    # receive ph2_get_spi()             // return random local SPI
+    # receive ph2_initiated()           // remember 'exchange context'
+    # receive ph2_send()                // send(s) data to the peer
+
+    while (ph2 is in progress)
+    {
+      if (select(s, 1sec) == can_read)
+      {
+        recv(s, data, len);
+        charon_recv(data,len);
+
+        # receive ph2_send()
+
+        # receive ph2_completed()       // phase 2 completed
+        # - or -
+        # receive ph2_disposed()        // phase 1 failed to complete
+      }
+    }
+
+    .... a use of the SA ....
+
+    # may receive ph1_disposed()        // received INF/DELETE message
+    # may receive ph2_disposed()
+
+    .... a shutdown ....
+
+    charon_term1(...)                   // dispose phase 1 SA
+    # receive ph1_disposed()
+
+    charon_term2(...)                   // dispose phase 2 SA
+    # receive ph2_disposed()
+
+    charon_term()                       // shutdown libike
+
+  Note that ph2_completed() callback will provide its recipient with SPI 
+  and keying material for a negotiated SA. Libike can also be configured
+  to outsource scheduling of packet retransmissions, in which case the
+  user will also be receiving ph*_resend() callbacks.
+
+
+Datamodel and contexts
+
+  Libike datamodel is very simple - a list of phase 1 exchanges, each 
+  containing a list of associated phase 2 exchanges. Calls to API may 
+  create, remove or modify these lists as dictated by IKE logic. These
+  changes are often accompanied by notification callbacks allowing a 
+  user to track datamodel changes.
+    
+  For every exchange being added to the datamodel libike calls a user
+  back and provides an 'exchange context'. This context is a pointer
+  to an internal libike structure, which must be passed to API calls
+  to identify the exchange.
+
+  OTOH, the user can associate its own arbitrary context value with 
+  every new exchange, and libike will pass it to every callback issued. 
+  This context is further referred to as a 'callback context'.
+
+
+API
+
+  This section gives a quick view at a libike API. The API is comprised
+  of the following methods:
+
+  charon_init()
+
+    The library must be brought up into a functional state by a call to 
+    this method, which performs some trivial data initialization. Every
+    call to init() must be complemented by a call to term().
+
+  charon_term()
+
+    When the external code no longer needs libike services, it calls this
+    method, which will cleanup the datamodel by disposing of previously 
+    allocated elements. The call to term() must be preceded by a call to
+    init().
+
+  x4_charon_init1()
+
+    This method initiates new phase 1 exchange. Libike will inspect 
+    supplied phase 1 configuration, create supporting internal structures, 
+    query some additional information from the user via callbacks, prepare
+    the ISAKMP message and submit it to the user for the actual transfer. 
+    It will advance the state of the exchange and return from the init1().
+
+  x4_charon_init2()
+
+    This method initiates new phase 2 exchange in the context of existing 
+    and completed phase 1 exchange. The latter is identified by an 
+    'exchange context' that libike passed to the user during phase 1 
+    initiation.
+
+  x4_charon_term1()
+  
+    This method notifies libike that particular phase 1 exchange is no 
+    longer valid. This does not affect associated phase 2 exchanges, which
+    will remain intact or even be able to complete, but will not allow to
+    initiate any new ones.
+
+  x4_charon_term2()
+
+    Similar to term1() this method invalidates phase 2 exchange.
+
+  x4_charon_recv()
+
+    Since libike does not read the data from the network, it must be fed 
+    the IKE traffic via charon_recv() method. The socket information is
+    passed to the recv() together with ISAKMP message to demultiplex the
+    message between existing phase 1 and phase 2 exchanges.
+
+  x4_charon_tick()
+
+    Libike handles retransmission of the ISAKMP messages and thus requires
+    scheduled execution to perform timed activity. Calling charon_tick() 
+    does just that - enables libike to serve timed tasks.
+
+  
+Callbacks
+
+  Callbacks are the essential part of libike design. They provide means 
+  for decoupling the library from the specifics of packet transmission,
+  policy management and SA lifetime tracking.
+
+  There are 11 phase 1 callbacks and 8 phase 2 ones. Callbacks for both
+  phases share common functional purpose and fall into 4 categories -
+  - Status, Validation, Transmission and Query.
+
+  All callbacks, except for ph2_get_spi(), receive a 'callback context'
+  as a first parameter. This is a user-supplied value, which is used to
+  identify particular exchange to the user. How exactly the value gets 
+  associated with an exchange is covered at the end of the next section.
+
+  
+Status callbacks 
+
+  ph*_initiated()  
+  ph*_completed()
+  ph*_disposed()   
+  ph1_sa_used()   
+  ph2_responded()
+    
+  Callbacks of this type notify a user on an initiation, completion and 
+  disposal of an exchange.
+
+  ph*_initiated() is issued when the new exchange has just been added to
+  the libike lists. The callback will occur during processing of the 
+  charon_init*() API call. If libike cannot initiate an exchange, it will
+  not call ph*_initiated() and charon_init*() will return bfalse.
+    
+    The second parameter is an 'exchange context', which identifies 
+    libike internal exchange structure. This context is required 
+    for calling charon_term*() methods and for initiating phase 2 
+    exchanges.
+
+  ph*_disposed() is issued when existing exchange is invalidated and marked
+  for the removal from libike lists. For every ph*_initiated() call
+  libike guarantees a respective ph*_disposed() call. The exchange may get
+  disposed due to the variety of reasons including a call to charon_term*(),
+  a failure to transmit ISAKMP message, a retransmission timeout, receiving
+  an INF/DELETE message from the peer, etc. Note that disposal of the phase 
+  1 exchange does not automatically mean disposal of child phase 2 exchanges.
+
+  ph*_completed() notifies a user that specified exchange has been completed.
+  For phase 1 exchange it means it's now possible to call charon_init2() to
+  initiate phase 2 exchange.
+  
+    The second parameter for ph2_completed() contains SPI values and keying
+    material for a negotiated IPsec SA.
+
+  ph1_sa_used() notifies a user that ISAKMP SA has just been used to either
+  encrypt or decrypt some data. The callback is provided for scenarios where
+  lifetime of ISAKMP SA is being tracked. 
+  
+    The second parameter is an amount of the processed data in bytes.       
+
+  ph2_responded() notifies a user that libike received phase 2 exchange
+  initiation request from the peer. The request has been verified to be in 
+  a scope of existing phase 1 exchange, accepted for further processing and
+  placed on the exchange lists. 
+
+    Unlike for other callbacks, the first parameter is a callback context
+    of an associated phase **1** exchange. This allows a callback recipient
+    to link new exchange to its parent phase 1 exchange. 
+    
+    The second parameter is an 'exchange context' similar to the one passed
+    to the ph*_initiated() call.
+
+    The callback return value is a 'context callback' value that libike will
+    associate with a newly created phase 2 exchange.
+  
+  The 'callback context' value for locally initiated exchanges is taken from
+  a 'userdata' field of ike_config* parameter passed to charon_init*() call.
+ 
+
+Validation callbacks
+
+  ph*_validate()
+
+  These callbacks are issued to perform external to libike validation of 
+  peer's data.
+
+  ph1_validate() is used to validate ID, CERT_REQUEST and CERT payloads
+  received from the peer during phase 1 exchange.
+
+    The second parameter points at the body of respective ISAKMP payload,
+    the third parameter defines the type of the payload submitted for 
+    validation.
+
+    The callback must return btrue to accept the payload and resume 
+    further inbound processing. Returning bfalse signals libike to 
+    discard the ISAKMP message and keep exchange in its current state.
+
+    For certificate-based phase 1 exchanges the successful validation
+    is CERT payload authenticates the peer. Thus the callback code must
+    verify the certificate is of an accepted type, it comes from a 
+    recognized CA and not on the revocation list and perform all other
+    relevant certificate checks. 
+
+    Also note that if CERT_REQUEST has been successfully validated, libike
+    will issue ph1_get_cert() call, which *must* succeed. In other words,
+    accepting CERT_REQUEST means that requested certificate is at hand 
+    and is ready to be passed to libike when requested. If the certificate
+    is not available, validate() must return bfalse, which will cause
+    libike to abort and dispose the exchange.
+
+  ph2_validate() callback is issued to validate SA proposal made by the
+  peer when acting as a responder side in phase 2 exchange. The callback
+  must return btrue if the proposal is accepted and bfalse otherwise.
+
+
+Transmission callbacks
+  
+  ph*_send()
+  ph*_resend()
+  ph1_natt()
+
+  ph*_send() callback requests external code to commence the transmission
+  of provided data buffer to the peer. The peer must use 'callback context'
+  to identify the exchange and the peer this data is destined for. Returning
+  bfalse from the callback signals a fatal transmission error, which causes
+  libike to immediately dispose the exchange.
+
+  ph*_resend() is an optional callback allowing to control retransmission
+  behavior of libike. The resend() is first called in 1 second after
+  initial packet is sent out and then every time the retransmission is
+  about to happen. This may happen under two circumstances:
+  * libike has received a copy of the packet it recently replied to
+  * libike has not received a reply from the peer and assumes that
+    the packet it previously sent is now lost
+
+  ph1_natt() callback is invoked to indicate NAT traversal related activity.
+  
+    See natt.txt first for a quick overview of NAT-T.
+  
+  Libike user may enable support for one or more IKE NAT-T drafts by OR'ing
+  ike_natt_xx constants into s1_config.natt bitmask. This causes libike to 
+  announce its NAT-T capabilities to the peer by sending respective Vendor 
+  ID payload in the first main mode message. If the peer happens to support
+  the same NAT-T draft(s), libike will send and receive NAT discovery
+  payloads in 3rd and 4th messages. If NAT is detected, ph1_natt() is
+  invoked exactly before 5th message processing. If selected draft requires
+  port 'floating', the second parameter will point at net_link structure,
+  which must be adjusted to new port values. From this point ISAKMP messages
+  must be exchanged with the peer over new ports and using IKE-in-ESP-UDP
+  encapsulation. The third parameter indicates if the localhost is behind
+  the NAT (which normally translates into the need for keepalives if it is).
+
+Query callbacks
+
+  ph1_get_psk()
+  ph1_get_cert()
+  ph1_get_prikey()
+  ph1_get_pubkey()
+  ph2_get_spi()
+
+  Libike uses callbacks from this group to obtain additional crypto and SA
+  information it needs in a course of the exchange processing.
+
+  ph1_get_psk() returns preshared secret for a specified exchange.
+
+  ph1_get_cert() returns x.509 public key certificate to be used for local
+  host identification.
+
+  ph1_get_prikey() returns local private key in PKCS1 format.
+
+  ph1_get_pubkey() returns peer's public key used to verify its signature.
+  The key is requested only if the peer has not sent a certificate in its
+  6th phase 1 message.
+
+  ph2_get_spi() requests external code to generate new local SPI value for
+  phase 2 SA.
+
+
+Exchange configuration
+  
+  $todo  
+
+NAT Traversal Support
+
+  $todo
+
+
+
+<eod>
+
+  $Id: manual.txt,v 1.8 2003/04/28 04:29:22 alex Exp $

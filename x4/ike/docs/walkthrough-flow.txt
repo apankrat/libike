@@ -1,0 +1,82 @@
+/*
+ *    Copyright (c) 2003, Cipherica Labs. All rights reserved.
+ *    See enclosed license.txt for redistribution information.
+ *
+ *    $Id: walkthrough-flow.txt,v 1.1 2003/04/10 03:45:41 alex Exp $
+ */
+
+  charon_recv(pkt)
+   |
+  [pkt.len < 28] ------> discard
+   |
+  [! pkt.ci] ----------> discard
+   |
+  [! find s1] ----------------------------->  s1_respond(pkt)
+   |                                           |
+  [pkt.msgid] ->-*                             *---- [pkt.cr] -------> discard
+   |             |                                    |
+   |            find s2                              [! pkt.msgid] --> discard
+   |             |                                    |
+   * <-----------*                                   [pkt.et != mm] -> discard
+   |                                                  |
+  [retransmit]---------> resend response             s1_create_r(s1) 
+   |                                                  |
+  [s1.sa.established] --->--------*                  exchange_recv(s1) 
+   |                              |
+  [! pkt.encrypted] ---> discard  |
+   |                              |
+  decrypt                         |
+   |                              |
+   | <----------------------------*
+   |
+  unpack
+   |
+  [pkt.et == inf] -----> sx_recv_inf()
+   |
+  [s2] ----------------> exchange_recv(s2)
+   |
+  [! pkt.msgid] -------> exchange_recv(s1)
+   |
+  [pkt.et == qm] & [s1.completed] ---> s2_respond()
+   |                                    |
+   |                                    *--> s2_create_r(s2)
+   |                                          |
+   |                                         exchange_recv(s2)
+  discard
+
+===============================================================================
+
+  exchange_recv()
+   |
+  check exchange type -> return
+   |
+  check !completed    -> return
+   |
+  on_recv()           -> return
+   |
+  xchg->on_advance()
+   |
+  check !completed    -> return
+   |
+  xchg->on_send()     -> return
+   |
+   *--> sxx_sendx()
+         |
+        [format packet]
+         |
+        exchange_send()
+         |
+         *--> exchange_encrypt()
+               |
+              xchg->on_packet()
+               |
+               *--> sx_xchg_on_packet()
+                     |
+                    sx->cb.on_packet()
+                     |
+   *-----------------*
+   |
+  xchg->on_advance()
+   |
+
+===============================================================================

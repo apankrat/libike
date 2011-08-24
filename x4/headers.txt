@@ -1,0 +1,18 @@
+/*
+ *    Copyright (c) 2003, Cipherica Labs. All rights reserved.
+ *    See enclosed license.txt for redistribution information.
+ *
+ *    $Id: headers.txt,v 1.1.1.1 2003/03/19 17:09:17 alex Exp $
+ */
+
+The following header dependencies are always true and may be 
+relied upon to decrease number of #include statements:
+
+  x4/core/types.h includes  x4/core/macros.h
+
+  x4/misc/bbuf.h  includes  x4/core/types.h
+                            x4/core/macros.h (*)
+                            x4/core/debug.h
+                            x4/core/memory.h
+
+(*) marks indirect inclusion

@@ -1,0 +1,57 @@
+/*
+ *    Copyright (c) 2003, Cipherica Labs. All rights reserved.
+ *    See enclosed license.txt for redistribution information.
+ *
+ *    $Id: natt.txt,v 1.1 2003/03/26 05:23:42 alex Exp $
+ */
+
+  NAT traversal notes
+  -------------------
+
+  Three main draft revisions exist as of March 2003:
+
+  1) draft-ietf-ipsec-nat-t-ike-01.txt (expired)
+  2) draft-ietf-ipsec-nat-t-ike-03.txt (expired)
+  3) draft-ietf-ipsec-nat-t-ike-05.txt
+
+  All three define two new ISAKMP payloads (NAT-D and NAT-OA), two new 
+  IPsec encapsulation modes (udp-tunnel, udp-transport) and Vendor IDs
+  to announce the support for particular NAT-T flavour.
+
+  NAT-D payload is used NAT discovery, its format is the same for all
+  3 drafts. ID values are different though.
+
+  NAT-OA is Phase 2 payload and carries an Original Address information. 
+  OA is used in the context of transport mode IPsec SA to allow for
+  efficient IP checksum recalculation upon decapsulating ESP traffic.
+
+  Two new encapsulation modes are UDP/ESP tunnel and transport. The idea
+  is similar across the drafts, though specific IPsec DOI values and UDP 
+  encapsulation procedure are different. Latter translates into earlier
+  drafts using ISAKMP messages w/ zero cookies to carry ESP packets, 
+  while recent drafts put ISAKMP messages into UDP/ESP packets w/ zero 
+  SPI instead.
+
+  Recent drafts also require peers to implement 'port floating', which
+  is switching IKE traffic to a non-500 UDP ports once the presence of
+  NAT has been detected.
+
+  The following table summarizes the differences between all three drafts:
+
+              
+                  | draft-01         | draft-03         | draft-05
+  ----------------+------------------+------------------+---------------
+                  |                  |                  |
+    Vendor ID     | 4485152d18b6bbcd | 7d9419a65310ca6f | <undefined>
+                  | 0be8a8469579ddcc | 2c179d9215529d56 |
+                  |                  |                  |                                     
+    NATD          | 130              | 130              | 15
+    NATOA         | 131              | 131              | 16
+                  |                  |                  |
+    UDP-Tunnel    | 61443            | 61443            | 3
+    UDP-Transport | 61444            | 61444            | 4
+                  |                  |                  |
+    Port floating | no               | required         | required
+                  |                  |                  |
+    UDP encaps    | ESP-in-IKE       | IKE-in-ESP       | IKE-in-ESP
+                  |                  |                  |

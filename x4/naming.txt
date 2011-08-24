@@ -1,0 +1,90 @@
+/*
+ *    Copyright (c) 2003, Cipherica Labs. All rights reserved.
+ *    See enclosed license.txt for redistribution information.
+ *
+ *    $Id: naming.txt,v 1.1.1.1 2003/03/19 17:09:18 alex Exp $
+ */
+
+  -- Naming convention --
+
+  The framework defines the following integral types in addition to ones 
+  found in ANSI C **grammar** :
+
+    uint8
+    uint16
+    uint32
+    uint
+
+    size_t
+    time_t
+    va_list
+
+  The equivalent of C++ bool - enum bval { bfalse, btrue }; is also defined 
+  as shown.
+
+  These are the only framework-defined symbols that do not have their 
+  names prepended with a standard prefix.
+
+  All other names defined in- and by- the framework bear the standard two
+  letter prefix followed by the single-letter language element specifier 
+  followed by the underscore. The specifier is defined as follows:
+
+    types:
+
+      struct            - 's'
+      union             - 'u'
+      enum              - 'e'
+      function pointer  - 'f'
+      all other         - 't'
+
+    constants or enum values:
+
+      'c'
+
+    variables:
+
+      global            - 'v'
+      all other         - n/a, these follow internal naming convention,
+                          the only requirement of which is a consistency
+
+    function:
+
+      static    - no specifier, function name is prefixed with _ alone
+      all other - no specifier, function name is prepended with two-letter
+                  prefix followed by the underscore
+
+    macros:
+
+      'm', all in lowercase, but 
+           can be ommited or replaced with 'c' depending on the context
+
+
+  ************************************************
+  *                                              *
+  *  All Cipherica Labs code uses 'x4' prefix    *
+  *                                              *
+  ************************************************
+
+  For example:
+
+    typedef struct x4s_bbuf_tag
+    {
+      uint8 * data;
+      uint    len;
+
+    } x4s_bbuf;
+
+    typedef enum x4e_auth_type_tag
+    {
+      x4c_at_unknown,
+      x4c_at_password,
+      x4c_at_certificate
+
+    } x4e_auth_type;
+
+    #define x4m_swap(a,b) ((a)^=(b)^=(a))
+
+    extern x4t_ip4_addr x4v_localhost;
+
+    x4e_auth_type x4_parse_buffer(x4s_bbuf * b);
+    
