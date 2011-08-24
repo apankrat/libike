@@ -1,3 +1,17 @@
+/*
+ *	This file is a part of libike library.
+ *	Copyright (c) 2003-2011 Alex Pankratov. All rights reserved.
+ *
+ *	http://swapped.cc/libike
+ */
+
+/*
+ *	The program is distributed under terms of BSD license. 
+ *	You can obtain the copy of the license by visiting:
+ *
+ *	http://www.opensource.org/licenses/bsd-license.php
+ */
+
 #include "natt.h"
 #include "utils.h"
 #include "x4/core/debug.h"

@@ -1,8 +1,19 @@
 /*
- *    Copyright (c) 2003, Cipherica Labs. All rights reserved.
- *    See enclosed license.txt for redistribution information.
+ *	This file is a part of libike library.
+ *	Copyright (c) 2003-2011 Alex Pankratov. All rights reserved.
  *
- *    $Id: cipher_rc5.c,v 1.1 2003/04/27 21:37:37 alex Exp $
+ *	http://swapped.cc/libike
+ */
+
+/*
+ *	The program is distributed under terms of BSD license. 
+ *	You can obtain the copy of the license by visiting:
+ *
+ *	http://www.opensource.org/licenses/bsd-license.php
+ */
+
+/*
+ *	$Id: cipher_rc5.c,v 1.1 2003/04/27 21:37:37 alex Exp $
  */
 
 #include "x4/crypto/cipher.h"

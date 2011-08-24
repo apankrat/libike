@@ -1,8 +1,19 @@
 /*
- *    Copyright (c) 2003, Cipherica Labs. All rights reserved.
- *    See enclosed license.txt for redistribution information.
+ *	This file is a part of libike library.
+ *	Copyright (c) 2003-2011 Alex Pankratov. All rights reserved.
  *
- *    $Id: const.h,v 1.7 2003/04/27 21:37:37 alex Exp $
+ *	http://swapped.cc/libike
+ */
+
+/*
+ *	The program is distributed under terms of BSD license. 
+ *	You can obtain the copy of the license by visiting:
+ *
+ *	http://www.opensource.org/licenses/bsd-license.php
+ */
+
+/*
+ *	$Id: const.h,v 1.7 2003/04/27 21:37:37 alex Exp $
  */
 
 #ifndef _CPHL_IKE_RFC_CONSTANTS_H_
