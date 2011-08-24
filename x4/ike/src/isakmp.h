@@ -6,7 +6,7 @@
  */
 
 /*
- *	The program is distributed under terms of BSD license. 
+ *	The library is distributed under terms of BSD license. 
  *	You can obtain the copy of the license by visiting:
  *
  *	http://www.opensource.org/licenses/bsd-license.php
