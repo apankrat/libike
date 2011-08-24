@@ -24,8 +24,8 @@ LICENSE
 
 OVERVIEW
 
-  Charon library allows its users to engage in IKE exchanges (subject 
-  to limitations listed below) as per RFC 2407, 2408, 2409, etc.
+  Libike allows its users to engage in IKE exchanges (subject to 
+  limitations listed below) as per RFC 2407, 2408, 2409, etc.
 
   The library implements ISAKMP packet processing, IKE state management
   and various miscellaneous functionality such as handling of packet 
