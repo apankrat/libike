@@ -1,8 +1,9 @@
-Version
+VERSION
 
- 0.9.6
+  libike 0.9.6
 
-Introduction
+
+INTRODUCTION
 
   Libike (aka charon) is an IKE exchange management library.
 
@@ -10,18 +11,18 @@ Introduction
   principles and API. The document is work-in-progress, some sections
   are incomplete and are subject to further expansion.
 
-Legal
 
-  Copyright (c) 2003, Cipherica Labs. All rights reserved.
-  See enclosed license.txt for redistribution information.
+LICENSE
 
-  libike is distributed under one of the OSI-approved Open Source
-  licenses. The license effectively boils down to the unrestricted
-  use under condition of open-sourced redistributions. For other
-  redistribution schemes alternate licensing must be negotiated
-  with Cipherica Labs.  
+  Copyright (c) 2003-2011 Alex Pankratov. All rights reserved.
 
-Overview
+  The library is distributed under terms of BSD license. 
+  You can obtain the copy of the license by visiting:
+
+  http://www.opensource.org/licenses/bsd-license.php
+
+
+OVERVIEW
 
   Charon library allows its users to engage in IKE exchanges (subject 
   to limitations listed below) as per RFC 2407, 2408, 2409, etc.
@@ -35,7 +36,8 @@ Overview
   external code via the callback mechanism instead.
 
 
-Framework and source code structure
+
+FRAMEWORK AND SOURCE TREE STRUCTURE
 
   x4/core
   
@@ -72,7 +74,7 @@ Framework and source code structure
     The code for testing libike. Subject to frequent changes.
 
 
-General considerations
+GENERAL CONSIDERATIONS
 
   The API consists of exactly 8 methods, which are the only library 
   entry points. The library code is executing if and only if one of
@@ -100,7 +102,7 @@ General considerations
     to simplify data housekeeping.
 
 
-Typical use
+TYPICAL USAGE
 
   The following pseudocode outlines the execution flow during a typical
   libike use. The example assumes phase 1 is authenticated with preshared
@@ -184,7 +186,7 @@ Typical use
   user will also be receiving ph*_resend() callbacks.
 
 
-Datamodel and contexts
+DATAMODEL AND CONTEXTS
 
   Libike datamodel is very simple - a list of phase 1 exchanges, each 
   containing a list of associated phase 2 exchanges. Calls to API may 
@@ -260,7 +262,7 @@ API
     does just that - enables libike to serve timed tasks.
 
   
-Callbacks
+CALLBACKS
 
   Callbacks are the essential part of libike design. They provide means 
   for decoupling the library from the specifics of packet transmission,
@@ -276,7 +278,7 @@ Callbacks
   associated with an exchange is covered at the end of the next section.
 
   
-Status callbacks 
+STATUS CALLBACKS
 
   ph*_initiated()  
   ph*_completed()
@@ -337,7 +339,7 @@ Status callbacks
   a 'userdata' field of ike_config* parameter passed to charon_init*() call.
  
 
-Validation callbacks
+VALIDATION CALLBACKS
 
   ph*_validate()
 
@@ -373,7 +375,7 @@ Validation callbacks
   must return btrue if the proposal is accepted and bfalse otherwise.
 
 
-Transmission callbacks
+TRANSMISSION CALLBACKS
   
   ph*_send()
   ph*_resend()
@@ -410,7 +412,8 @@ Transmission callbacks
   encapsulation. The third parameter indicates if the localhost is behind
   the NAT (which normally translates into the need for keepalives if it is).
 
-Query callbacks
+
+QUERYING CALLBACKS
 
   ph1_get_psk()
   ph1_get_cert()
@@ -436,16 +439,16 @@ Query callbacks
   phase 2 SA.
 
 
-Exchange configuration
+EXCHANGE CONFIGURATION
   
   $todo  
 
-NAT Traversal Support
+
+NAT TRAVERSAL SUPPORT
 
   $todo
 
 
-
-<eod>
+REVISION
 
   $Id: manual.txt,v 1.8 2003/04/28 04:29:22 alex Exp $
